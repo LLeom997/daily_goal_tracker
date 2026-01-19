@@ -3,7 +3,7 @@ import React from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { format, subDays, eachDayOfInterval } from 'date-fns';
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip } from 'recharts';
+import { BarChart, Bar, XAxis, ResponsiveContainer, Cell, Tooltip } from 'recharts';
 
 const Analytics: React.FC = () => {
   const chartData = useLiveQuery(async () => {
@@ -55,34 +55,35 @@ const Analytics: React.FC = () => {
   if (!chartData) return null;
 
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <section className="space-y-4">
-        <h2 className="text-xs uppercase tracking-[0.2em] font-black text-zinc-500">Weekly Performance</h2>
-        <div className="h-64 brutalist-border border-zinc-900 rounded-3xl p-4 bg-zinc-900/30">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <section className="space-y-3">
+        <h2 className="text-[10px] uppercase tracking-widest font-black text-zinc-600">Performance</h2>
+        <div className="h-48 brutalist-border border-zinc-900 rounded-2xl p-3 bg-zinc-900/20">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData}>
               <XAxis 
                 dataKey="name" 
                 axisLine={false} 
                 tickLine={false} 
-                tick={{ fill: '#71717a', fontSize: 10, fontWeight: 900 }} 
+                tick={{ fill: '#52525b', fontSize: 8, fontWeight: 800 }} 
               />
               <Tooltip 
-                cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                cursor={{ fill: 'rgba(255,255,255,0.03)' }}
                 contentStyle={{ 
                   backgroundColor: '#09090b', 
-                  border: '2px solid #27272a',
-                  borderRadius: '1rem',
-                  fontSize: '12px',
+                  border: '1px solid #27272a',
+                  borderRadius: '0.75rem',
+                  fontSize: '10px',
                   fontWeight: 'bold',
-                  textTransform: 'uppercase'
+                  textTransform: 'uppercase',
+                  padding: '4px 8px'
                 }}
               />
-              <Bar dataKey="completions" radius={[6, 6, 0, 0]}>
+              <Bar dataKey="completions" radius={[4, 4, 0, 0]}>
                 {chartData.map((entry, index) => (
                   <Cell 
                     key={`cell-${index}`} 
-                    fill={entry.completions > 0 ? '#f4f4f5' : '#27272a'} 
+                    fill={entry.completions > 0 ? '#fafafa' : '#27272a'} 
                   />
                 ))}
               </Bar>
@@ -91,14 +92,14 @@ const Analytics: React.FC = () => {
         </div>
       </section>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="brutalist-border border-zinc-900 p-6 rounded-3xl bg-zinc-900/40 text-center">
-            <p className="text-[10px] uppercase font-black text-zinc-500 tracking-widest mb-1">Best Streak</p>
-            <p className="text-3xl font-black italic tracking-tighter">{bestStreak ?? 0}</p>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="brutalist-border border-zinc-900 p-4 rounded-2xl bg-zinc-900/30 text-center">
+            <p className="text-[8px] uppercase font-black text-zinc-600 tracking-widest mb-0.5">Record</p>
+            <p className="text-xl font-black italic tracking-tight">{bestStreak ?? 0}</p>
         </div>
-        <div className="brutalist-border border-zinc-900 p-6 rounded-3xl bg-zinc-900/40 text-center">
-            <p className="text-[10px] uppercase font-black text-zinc-500 tracking-widest mb-1">Total Wins</p>
-            <p className="text-3xl font-black italic tracking-tighter">{totalCompletions ?? 0}</p>
+        <div className="brutalist-border border-zinc-900 p-4 rounded-2xl bg-zinc-900/30 text-center">
+            <p className="text-[8px] uppercase font-black text-zinc-600 tracking-widest mb-0.5">Wins</p>
+            <p className="text-xl font-black italic tracking-tight">{totalCompletions ?? 0}</p>
         </div>
       </div>
     </div>
