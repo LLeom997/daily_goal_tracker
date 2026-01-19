@@ -1,17 +1,15 @@
 
-const CACHE_NAME = 'discipline-v1.2';
+const CACHE_NAME = 'discipline-v1.3';
 const ASSETS_TO_CACHE = [
+  './',
   './index.html',
-  './manifest.json',
-  'https://cdn.tailwindcss.com',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'
+  './manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[SW] Pre-caching core assets');
-      // Use map to return promises for individual assets to avoid one failure blocking all
+      console.log('[SW] Pre-caching critical assets');
       return Promise.allSettled(
         ASSETS_TO_CACHE.map(asset => cache.add(asset))
       );
@@ -38,6 +36,9 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+  
+  // Skip caching for external CDN scripts during fetch to avoid CORS issues in some browsers
+  if (event.request.url.includes('cdn.tailwindcss.com')) return;
 
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
@@ -55,9 +56,8 @@ self.addEventListener('fetch', (event) => {
         
         return networkResponse;
       }).catch(() => {
-        // Fallback to index.html for navigation requests when offline
         if (event.request.mode === 'navigate') {
-          return caches.match('./index.html');
+          return caches.match('./index.html') || caches.match('./');
         }
       });
     })

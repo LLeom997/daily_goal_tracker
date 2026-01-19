@@ -5,6 +5,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#09090b">
+  <!-- Resolved deprecation warning by adding mobile-web-app-capable -->
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
@@ -114,6 +116,8 @@
 </head>
 <body class="selection:bg-zinc-200 dark:selection:bg-zinc-800">
   <div id="root"></div>
+  <!-- Explicitly load the entry point to prevent MIME type or module loading errors -->
+  <script type="module" src="index.tsx"></script>
   <script>
     // PWA Service Worker Registration
     if ('serviceWorker' in navigator) {
