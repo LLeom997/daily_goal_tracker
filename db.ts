@@ -2,7 +2,6 @@
 import { Dexie, type Table } from 'dexie';
 import { Habit, HabitLog, Settings } from './types';
 
-// Fix: Use named import for Dexie to ensure full type resolution of inherited methods like version() and open()
 export class DisciplineDB extends Dexie {
   habits!: Table<Habit>;
   logs!: Table<HabitLog>;
@@ -10,7 +9,14 @@ export class DisciplineDB extends Dexie {
 
   constructor() {
     super('DisciplineDB');
-    // Fix: Access inherited 'version' method from the Dexie base class
+    // Version 2: Added 'completed' index to logs to allow filtering in Analytics
+    this.version(2).stores({
+      habits: '++id, name, active',
+      logs: '++id, habitId, date, completed, [habitId+date]',
+      settings: '++id'
+    });
+
+    // Handle legacy version 1 if user has it
     this.version(1).stores({
       habits: '++id, name, active',
       logs: '++id, habitId, date, [habitId+date]',
@@ -31,7 +37,6 @@ export const DEFAULT_HABITS = [
 
 export async function initializeDB() {
   try {
-    // Fix: Access inherited 'open' method from the Dexie base class instance
     await db.open();
     const habitCount = await db.habits.count();
     if (habitCount === 0) {
@@ -53,7 +58,6 @@ export async function initializeDB() {
     }
   } catch (err) {
     console.error("Database initialization failed:", err);
-    // Re-throw so the caller (index.tsx) knows initialization failed
     throw err;
   }
 }

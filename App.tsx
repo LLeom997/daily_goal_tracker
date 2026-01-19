@@ -1,11 +1,56 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, ReactNode } from 'react';
 import { HashRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutGrid, BarChart2, Settings as SettingsIcon, Zap } from 'lucide-react';
+import { LayoutGrid, BarChart2, Settings as SettingsIcon, AlertCircle } from 'lucide-react';
 import Dashboard from './pages/Dashboard';
 import Analytics from './pages/Analytics';
 import SettingsPage from './pages/SettingsPage';
 import { db } from './db';
+
+// Define explicit interfaces for ErrorBoundary props and state
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: any;
+}
+
+// Simple Error Boundary to catch rendering errors and prevent [object Object]
+// Fix: Use React.Component with explicit generic interfaces for props and state to resolve property access errors
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true, error };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      const msg = this.state.error instanceof Error ? this.state.error.message : JSON.stringify(this.state.error);
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-background p-6 text-center">
+          <div className="space-y-4 max-w-xs">
+            <AlertCircle className="mx-auto text-destructive" size={48} />
+            <h2 className="text-xl font-bold italic tracking-tighter uppercase">Application Crash</h2>
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">{msg}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="w-full py-3 bg-primary text-primary-foreground rounded-xl font-bold text-xs uppercase tracking-widest"
+            >
+              Reload App
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const Navigation = () => {
   const location = useLocation();
@@ -61,18 +106,20 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <HashRouter>
-      <div className="min-h-screen bg-background pb-20 selection:bg-primary selection:text-primary-foreground">
-        <main className="max-w-md mx-auto px-6 py-10">
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/analytics" element={<Analytics />} />
-            <Route path="/settings" element={<SettingsPage setTheme={setTheme} />} />
-          </Routes>
-        </main>
-        <Navigation />
-      </div>
-    </HashRouter>
+    <ErrorBoundary>
+      <HashRouter>
+        <div className="min-h-screen bg-background pb-20 selection:bg-primary selection:text-primary-foreground">
+          <main className="max-w-md mx-auto px-6 py-10">
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/analytics" element={<Analytics />} />
+              <Route path="/settings" element={<SettingsPage setTheme={setTheme} />} />
+            </Routes>
+          </main>
+          <Navigation />
+        </div>
+      </HashRouter>
+    </ErrorBoundary>
   );
 };
 

@@ -1,47 +1,55 @@
 
 import React, { useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { BarChart, Bar, XAxis, ResponsiveContainer, Tooltip, Cell, YAxis } from 'recharts';
-import { format, subDays, isBefore, startOfDay, parseISO, differenceInDays } from 'date-fns';
+import { BarChart, Bar, XAxis, ResponsiveContainer, Tooltip, Cell } from 'recharts';
+import { format, subDays, startOfToday, isValid, parseISO } from 'date-fns';
 import { Trophy, Zap, Flame, Target } from 'lucide-react';
 import { db } from '../db';
-import { HabitLog } from '../types';
+import { HabitLog, UserStats } from '../types';
 
 const Analytics: React.FC = () => {
   const habits = useLiveQuery(() => db.habits.where('active').equals(1).toArray());
   const allLogs = useLiveQuery(() => db.logs.where('completed').equals(1).toArray());
 
-  // Logic to calculate XP and Levels
-  const stats = useMemo(() => {
-    if (!allLogs || !habits) return { xp: 0, level: 1, progress: 0, currentStreak: 0, bestStreak: 0 };
+  // Logic to calculate XP and Levels with defensive guards
+  const stats: UserStats = useMemo(() => {
+    const defaultStats: UserStats = { xp: 0, level: 1, progress: 0, currentStreak: 0, bestStreak: 0, totalCompletions: 0 };
+    if (!allLogs || !habits || habits.length === 0) return defaultStats;
 
     const totalCompletions = allLogs.length;
     
-    // Group logs by date to calculate streaks
+    // Group logs by date
     const logsByDate = allLogs.reduce((acc, log) => {
-      acc[log.date] = (acc[log.date] || 0) + 1;
+      if (log.date) {
+        acc[log.date] = (acc[log.date] || 0) + 1;
+      }
       return acc;
     }, {} as Record<string, number>);
 
-    // Calculate Streak (Consecutive days where at least 1 habit was done)
+    // Calculate Streaks
     let currentStreak = 0;
     let bestStreak = 0;
     let tempStreak = 0;
+    const today = startOfToday();
     
-    // Check back 365 days
     for (let i = 0; i < 365; i++) {
-      const dateStr = format(subDays(new Date(), i), 'yyyy-MM-dd');
+      const dateCheck = subDays(today, i);
+      const dateStr = format(dateCheck, 'yyyy-MM-dd');
+      
       if (logsByDate[dateStr] > 0) {
         tempStreak++;
-        if (i === currentStreak) currentStreak++; // Still in current streak
-      } else {
-        if (i === 0) {
-           // Today not done yet, check if yesterday was done to keep currentStreak alive
-           continue; 
+        // If we are checking today or consecutive days from today, increment currentStreak
+        if (i === currentStreak || (i === 1 && currentStreak === 0)) {
+          currentStreak = tempStreak;
         }
-        bestStreak = Math.max(bestStreak, tempStreak);
-        tempStreak = 0;
-        if (i > currentStreak) break; // Optimization: stop if we passed the gap
+      } else {
+        // Only break current streak if we are past "today" and "yesterday"
+        if (i > 1) {
+          bestStreak = Math.max(bestStreak, tempStreak);
+          tempStreak = 0;
+          // Optimization: if we're past the gap, no need to keep calculating current streak
+          if (i > currentStreak + 1) break;
+        }
       }
     }
     bestStreak = Math.max(bestStreak, tempStreak);
@@ -51,15 +59,16 @@ const Analytics: React.FC = () => {
     const level = Math.floor(Math.sqrt(xp / 100)) + 1;
     const currentLevelXP = Math.pow(level - 1, 2) * 100;
     const nextLevelXP = Math.pow(level, 2) * 100;
-    const progress = ((xp - currentLevelXP) / (nextLevelXP - currentLevelXP)) * 100;
+    const progress = Math.min(100, Math.max(0, ((xp - currentLevelXP) / (nextLevelXP - currentLevelXP)) * 100));
 
     return { xp, level, progress, currentStreak, bestStreak, totalCompletions };
   }, [allLogs, habits]);
 
   const chartData = useMemo(() => {
     if (!allLogs) return [];
+    const today = startOfToday();
     return Array.from({ length: 7 }).map((_, i) => {
-      const date = subDays(new Date(), 6 - i);
+      const date = subDays(today, 6 - i);
       const dateStr = format(date, 'yyyy-MM-dd');
       const count = allLogs.filter(log => log.date === dateStr).length;
       return {
@@ -70,37 +79,37 @@ const Analytics: React.FC = () => {
   }, [allLogs]);
 
   return (
-    <div className="space-y-10 pb-12">
+    <div className="space-y-10 pb-12 animate-in fade-in duration-500">
       <header className="space-y-6">
         <div className="space-y-1">
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Growth Engine</p>
-          <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Growth Engine</p>
+          <h1 className="text-3xl font-black italic tracking-tight">Analytics</h1>
         </div>
 
         {/* Level System Card */}
-        <div className="p-6 rounded-3xl bg-primary text-primary-foreground shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-10">
-            <Trophy size={80} />
+        <div className="p-6 rounded-[2rem] bg-primary text-primary-foreground shadow-2xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-700">
+            <Trophy size={100} />
           </div>
-          <div className="relative z-10 space-y-4">
+          <div className="relative z-10 space-y-5">
             <div className="flex justify-between items-center">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest opacity-70">Discipline Level</p>
-                <h2 className="text-4xl font-black italic">LVL {stats.level}</h2>
+                <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">Discipline Level</p>
+                <h2 className="text-5xl font-black italic tracking-tighter">LVL {stats.level}</h2>
               </div>
               <div className="text-right">
-                <p className="text-[10px] font-bold uppercase tracking-widest opacity-70">Total XP</p>
-                <p className="text-xl font-bold">{stats.xp.toLocaleString()}</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">Total XP</p>
+                <p className="text-2xl font-black">{stats.xp.toLocaleString()}</p>
               </div>
             </div>
             <div className="space-y-2">
-              <div className="h-2 w-full bg-white/20 rounded-full overflow-hidden">
+              <div className="h-3 w-full bg-white/10 rounded-full overflow-hidden backdrop-blur-sm">
                 <div 
-                  className="h-full bg-white transition-all duration-1000" 
+                  className="h-full bg-white transition-all duration-1000 ease-out" 
                   style={{ width: `${stats.progress}%` }} 
                 />
               </div>
-              <p className="text-[10px] font-medium opacity-70 text-center tracking-tight">
+              <p className="text-[10px] font-bold opacity-60 text-center tracking-widest uppercase">
                 {Math.round(stats.progress)}% to Level {stats.level + 1}
               </p>
             </div>
@@ -110,55 +119,47 @@ const Analytics: React.FC = () => {
 
       {/* Quick Stats Grid */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="p-5 rounded-2xl border bg-card flex flex-col justify-between h-32">
-          <Flame className="text-orange-500 mb-2" size={20} />
+        <div className="p-6 rounded-[2rem] border-2 bg-card flex flex-col justify-between h-36 hover:border-orange-500/50 transition-colors">
+          <Flame className="text-orange-500" size={24} />
           <div>
-            <p className="text-2xl font-bold">{stats.currentStreak}</p>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Current Streak</p>
+            <p className="text-3xl font-black italic tracking-tighter">{stats.currentStreak}</p>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Current Streak</p>
           </div>
         </div>
-        <div className="p-5 rounded-2xl border bg-card flex flex-col justify-between h-32">
-          <Zap className="text-yellow-500 mb-2" size={20} />
+        <div className="p-6 rounded-[2rem] border-2 bg-card flex flex-col justify-between h-36 hover:border-yellow-500/50 transition-colors">
+          <Zap className="text-yellow-500" size={24} />
           <div>
-            <p className="text-2xl font-bold">{stats.bestStreak}</p>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Best Streak</p>
+            <p className="text-3xl font-black italic tracking-tighter">{stats.bestStreak}</p>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Best Streak</p>
           </div>
         </div>
       </div>
 
       {/* Weekly Activity Chart */}
       <section className="space-y-6">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 px-1">
           <Target size={18} className="text-primary" />
-          <h3 className="text-sm font-bold tracking-tight uppercase">Weekly Output</h3>
+          <h3 className="text-xs font-bold tracking-[0.15em] uppercase">Weekly Output</h3>
         </div>
-        <div className="h-48 w-full bg-card border rounded-2xl p-4">
+        <div className="h-56 w-full bg-card border-2 rounded-[2rem] p-6">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData}>
               <XAxis 
                 dataKey="name" 
                 axisLine={false} 
                 tickLine={false} 
-                tick={{fontSize: 10, fill: 'currentColor', opacity: 0.5}} 
-              />
-              <Tooltip 
-                cursor={{fill: 'hsl(var(--muted))', opacity: 0.2}}
-                contentStyle={{ 
-                  borderRadius: '12px', 
-                  border: '1px solid hsl(var(--border))', 
-                  backgroundColor: 'hsl(var(--card))',
-                  fontSize: '12px'
-                }}
+                tick={{fontSize: 10, fontWeight: 700, fill: 'currentColor', opacity: 0.4}} 
               />
               <Bar 
                 dataKey="completed" 
-                radius={[6, 6, 6, 6]}
-                barSize={20}
+                radius={[8, 8, 8, 8]}
+                barSize={24}
               >
                 {chartData.map((entry, index) => (
                   <Cell 
                     key={`cell-${index}`} 
                     fill={entry.completed > 0 ? 'hsl(var(--primary))' : 'hsl(var(--muted))'} 
+                    className="transition-all duration-300 hover:opacity-80"
                   />
                 ))}
               </Bar>
@@ -169,49 +170,38 @@ const Analytics: React.FC = () => {
 
       {/* Intensity Heatmap */}
       <section className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h3 className="text-sm font-bold tracking-tight uppercase">Momentum Map</h3>
-          <span className="text-[10px] text-muted-foreground font-medium">Last 28 Days</span>
+        <div className="flex justify-between items-center px-1">
+          <h3 className="text-xs font-bold tracking-[0.15em] uppercase">Momentum Map</h3>
+          <span className="text-[10px] text-muted-foreground font-bold uppercase">28D Window</span>
         </div>
         <div className="grid grid-cols-7 gap-2">
           {Array.from({ length: 28 }).map((_, i) => {
-            const date = subDays(new Date(), 27 - i);
+            const date = subDays(startOfToday(), 27 - i);
             const dateStr = format(date, 'yyyy-MM-dd');
             const logsOnDay = allLogs?.filter(log => log.date === dateStr).length || 0;
-            const habitCount = habits?.length || 1;
-            const intensity = logsOnDay / habitCount;
+            const habitCount = Math.max(1, habits?.length || 1);
+            const intensity = Math.min(1, logsOnDay / habitCount);
             
             return (
               <div 
                 key={i}
-                title={`${dateStr}: ${logsOnDay} completed`}
-                className={`aspect-square rounded-md transition-all duration-500 border ${
-                  intensity > 0 ? 'border-primary/20' : 'border-transparent'
+                className={`aspect-square rounded-lg transition-all duration-300 border-2 ${
+                  intensity > 0 ? 'border-primary/10' : 'border-transparent'
                 }`}
                 style={{
                   backgroundColor: intensity > 0 
-                    ? `hsl(var(--primary) / ${Math.max(0.1, intensity)})` 
-                    : 'hsl(var(--muted) / 0.3)'
+                    ? `hsl(var(--primary) / ${Math.max(0.15, intensity)})` 
+                    : 'hsl(var(--muted) / 0.4)'
                 }}
               />
             );
           })}
         </div>
-        <div className="flex justify-between items-center text-[10px] text-muted-foreground font-bold uppercase tracking-widest px-1">
-          <span>Less</span>
-          <div className="flex gap-1">
-            <div className="w-2 h-2 rounded-sm bg-muted/30" />
-            <div className="w-2 h-2 rounded-sm bg-primary/30" />
-            <div className="w-2 h-2 rounded-sm bg-primary/60" />
-            <div className="w-2 h-2 rounded-sm bg-primary" />
-          </div>
-          <span>More</span>
-        </div>
       </section>
 
-      <footer className="pt-8 border-t text-center">
-         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-           Total Task Completions: {stats.totalCompletions}
+      <footer className="pt-10 border-t-2 border-dashed text-center">
+         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em]">
+           Lifetime Missions: {stats.totalCompletions}
          </p>
       </footer>
     </div>

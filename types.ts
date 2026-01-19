@@ -23,9 +23,10 @@ export interface Settings {
 }
 
 export interface UserStats {
-  score: number;
+  xp: number;
   level: number;
-  xpToNextLevel: number;
+  progress: number;
+  currentStreak: number;
+  bestStreak: number;
   totalCompletions: number;
-  longestStreak: number;
 }

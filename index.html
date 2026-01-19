@@ -66,13 +66,7 @@
       overscroll-behavior-y: contain;
     }
 
-    .card { background-color: hsl(var(--card)); color: hsl(var(--card-foreground)); border: 1px solid hsl(var(--border)); border-radius: var(--radius); }
-    .btn-primary { background-color: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
-    .btn-secondary { background-color: hsl(var(--secondary)); color: hsl(var(--secondary-foreground)); }
-    
     * { border-color: hsl(var(--border)); }
-
-    /* Hide scrollbars but keep functionality */
     ::-webkit-scrollbar { display: none; }
   </style>
   <script>
@@ -86,36 +80,14 @@
             ring: "hsl(var(--ring))",
             background: "hsl(var(--background))",
             foreground: "hsl(var(--foreground))",
-            primary: {
-              DEFAULT: "hsl(var(--primary))",
-              foreground: "hsl(var(--primary-foreground))",
-            },
-            secondary: {
-              DEFAULT: "hsl(var(--secondary))",
-              foreground: "hsl(var(--secondary-foreground))",
-            },
-            destructive: {
-              DEFAULT: "hsl(var(--destructive))",
-              foreground: "hsl(var(--destructive-foreground))",
-            },
-            muted: {
-              DEFAULT: "hsl(var(--muted))",
-              foreground: "hsl(var(--muted-foreground))",
-            },
-            accent: {
-              DEFAULT: "hsl(var(--accent))",
-              foreground: "hsl(var(--accent-foreground))",
-            },
-            card: {
-              DEFAULT: "hsl(var(--card))",
-              foreground: "hsl(var(--card-foreground))",
-            },
+            primary: { DEFAULT: "hsl(var(--primary))", foreground: "hsl(var(--primary-foreground))" },
+            secondary: { DEFAULT: "hsl(var(--secondary))", foreground: "hsl(var(--secondary-foreground))" },
+            destructive: { DEFAULT: "hsl(var(--destructive))", foreground: "hsl(var(--destructive-foreground))" },
+            muted: { DEFAULT: "hsl(var(--muted))", foreground: "hsl(var(--muted-foreground))" },
+            accent: { DEFAULT: "hsl(var(--accent))", foreground: "hsl(var(--accent-foreground))" },
+            card: { DEFAULT: "hsl(var(--card))", foreground: "hsl(var(--card-foreground))" },
           },
-          borderRadius: {
-            lg: "var(--radius)",
-            md: "calc(var(--radius) - 2px)",
-            sm: "calc(var(--radius) - 4px)",
-          },
+          borderRadius: { lg: "var(--radius)", md: "calc(var(--radius) - 2px)", sm: "calc(var(--radius) - 4px)" },
         },
       },
     }
@@ -143,9 +115,29 @@
 <body class="selection:bg-zinc-200 dark:selection:bg-zinc-800">
   <div id="root"></div>
   <script>
+    // PWA Service Worker Registration
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW reg failed: ', err));
+        try {
+          // Guard: Service Workers require a secure context (HTTPS) or localhost.
+          // They also fail to initialize if window.location.href is invalid (e.g., about:srcdoc).
+          if (window.location.protocol.startsWith('http')) {
+            const swUrl = new URL('sw.js', window.location.href).href;
+            const scope = new URL('./', window.location.href).pathname;
+
+            navigator.serviceWorker.register(swUrl, { scope: scope })
+              .then((registration) => {
+                console.log('[PWA] Service Worker active:', registration.scope);
+              })
+              .catch((error) => {
+                // Mismatch or restricted environment - non-fatal for core app
+                console.debug('[PWA] SW Registration deferred:', error.message);
+              });
+          }
+        } catch (e) {
+          // Swallow URL construction errors in environments like srcdoc iframes
+          console.debug('[PWA] Service Worker registration skipped in current environment.');
+        }
       });
     }
   </script>
