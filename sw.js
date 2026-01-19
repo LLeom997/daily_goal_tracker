@@ -1,2 +1,1 @@
-
-// Service worker disabled for non-PWA version
+// Service worker disabled
