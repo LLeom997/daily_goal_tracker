@@ -2,9 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#09090b">
   <title>Discipline | Daily Tracker</title>
+  
+  <!-- Explicitly kill any existing service workers to remove PWA state -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for(let registration of registrations) {
+          registration.unregister();
+          console.log('Service Worker unregistered');
+        }
+      });
+    }
+  </script>
+
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -59,16 +72,16 @@
       color: hsl(var(--foreground));
       -webkit-font-smoothing: antialiased;
       transition: background-color 0.3s ease;
-      overscroll-behavior-y: contain;
     }
 
     * { border-color: hsl(var(--border)); }
     ::-webkit-scrollbar { display: none; }
     
-    /* Optimized scroll and tap behavior for Chrome */
     html {
       -webkit-tap-highlight-color: transparent;
       scrollbar-width: none;
+      /* Prevent bounce scroll on mobile browsers */
+      overscroll-behavior: none;
     }
   </style>
   <script>
@@ -116,7 +129,6 @@
 </head>
 <body class="selection:bg-zinc-200 dark:selection:bg-zinc-800">
   <div id="root"></div>
-  <script type="module" src="index.tsx"></script>
-<script type="module" src="/index.tsx"></script>
+  <script type="module" src="/index.tsx"></script>
 </body>
 </html>

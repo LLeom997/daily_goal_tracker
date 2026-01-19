@@ -1,1 +1,1 @@
-// Service worker disabled
+// This file is no longer used.
