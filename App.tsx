@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, ReactNode } from 'react';
+import React, { useState, useEffect, ReactNode, Component } from 'react';
 import { HashRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { LayoutGrid, BarChart2, Settings as SettingsIcon, AlertCircle } from 'lucide-react';
 import Dashboard from './pages/Dashboard';
@@ -9,7 +9,8 @@ import { db } from './db';
 
 // Define explicit interfaces for ErrorBoundary props and state
 interface ErrorBoundaryProps {
-  children: ReactNode;
+  // Fix: Made children optional to prevent TS errors when used as a JSX tag
+  children?: ReactNode;
 }
 
 interface ErrorBoundaryState {
@@ -18,10 +19,11 @@ interface ErrorBoundaryState {
 }
 
 // Simple Error Boundary to catch rendering errors and prevent [object Object]
-// Fix: Use React.Component with explicit generic interfaces for props and state to resolve property access errors
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+// Fix: Inherit from Component directly and ensure property access is correctly typed
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
+    // Fix: Explicitly initialize state to avoid property access errors
     this.state = { hasError: false, error: null };
   }
 
@@ -30,6 +32,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 
   render() {
+    // Fix: Use local variables for easier property access and debugging
     if (this.state.hasError) {
       const msg = this.state.error instanceof Error ? this.state.error.message : JSON.stringify(this.state.error);
       return (
