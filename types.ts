@@ -4,10 +4,9 @@ export interface Habit {
   name: string;
   createdAt: number;
   active: number; // 1 for active, 0 for archived
-  category?: string;
 }
 
-export interface HabitLog {
+export interface Log {
   id?: number;
   habitId: number;
   date: string; // YYYY-MM-DD
@@ -16,17 +15,14 @@ export interface HabitLog {
 }
 
 export interface Settings {
-  id?: number;
-  theme: 'light' | 'dark';
+  id: string; // 'app-settings'
+  theme: 'dark' | 'light';
   notifications: boolean;
   reminderTime: string;
 }
 
-export interface UserStats {
-  xp: number;
-  level: number;
-  progress: number;
-  currentStreak: number;
-  bestStreak: number;
-  totalCompletions: number;
+export interface DailyCompletion {
+  date: string;
+  count: number;
+  total: number;
 }
