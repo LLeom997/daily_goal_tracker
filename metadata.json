@@ -1,5 +1,6 @@
+
 {
   "name": "Daily Discipline Tracker",
-  "description": "Build unstoppable discipline through daily habits, streaks, and progress visualization with offline-first local storage.",
+  "description": "Chrome-optimized high-performance web application for tracking habits and discipline.",
   "requestFramePermissions": []
 }
